@@ -77,10 +77,48 @@
   <button onclick="pickFood()">Fork It!</button>
 
   <script>
+    const foods = ["Chinese","Burgers","Mediterranean","Mexican","Pizza","BBQ","Italian","Sushi","Seafood","Pho","Thai","Steaks"];
+    let spinning = false;
+
     async function pickFood() {
+      if (spinning) return;
+
+      const btn = document.querySelector('button');
+      const result = document.getElementById('result');
+
+      if (result.textContent) {
+        result.textContent = '';
+        btn.textContent = 'Fork It!';
+        return;
+      }
+
+      spinning = true;
+      btn.disabled = true;
+
       const res = await fetch('/api/random');
       const data = await res.json();
-      document.getElementById('result').textContent = data.food;
+      const final = data.food;
+
+      let delay = 60;
+      let total = 0;
+      const duration = 2000;
+
+      function spin() {
+        result.textContent = foods[Math.floor(Math.random() * foods.length)];
+        total += delay;
+        delay = 60 + Math.pow(total / duration, 2) * 400;
+
+        if (total < duration) {
+          setTimeout(spin, delay);
+        } else {
+          result.textContent = final;
+          spinning = false;
+          btn.disabled = false;
+          btn.textContent = 'Clear Selection';
+        }
+      }
+
+      spin();
     }
   </script>
 </body>

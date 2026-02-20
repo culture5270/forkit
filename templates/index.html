@@ -39,20 +39,40 @@
       padding: 0.9rem 2.5rem;
       font-size: 1.2rem;
       font-weight: 700;
-      background: #e94560;
+      background: linear-gradient(135deg, #e94560, #f5a623);
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 50px;
       cursor: pointer;
-      transition: transform 0.1s, background 0.2s;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(233, 69, 96, 0.5);
+      transition: transform 0.15s, box-shadow 0.15s;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
 
-    button:hover { background: #c73652; }
-    button:active { transform: scale(0.97); }
+    button::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: white;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(233, 69, 96, 0.7);
+    }
+
+    button:hover::after { opacity: 0.08; }
+    button:active { transform: scale(0.96) translateY(0); box-shadow: 0 2px 12px rgba(233, 69, 96, 0.4); }
   </style>
 </head>
 <body>
   <h1>Fork <span>It!</span></h1>
+  <p style="color: #aaa; font-size: 1rem; text-align: center; line-height: 2;">Can't decide where to go tonight?<br>Click the button to let us decide for you.</p>
   <div id="result"></div>
   <button onclick="pickFood()">Fork It!</button>
 

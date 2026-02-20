@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fork It!</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 2rem;
+    }
+
+    h1 {
+      font-size: 3rem;
+      letter-spacing: -1px;
+    }
+
+    h1 span {
+      color: #e94560;
+    }
+
+    #result {
+      font-size: 2rem;
+      font-weight: 600;
+      min-height: 2.5rem;
+      color: #f5a623;
+    }
+
+    button {
+      padding: 0.9rem 2.5rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+      background: #e94560;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.2s;
+    }
+
+    button:hover { background: #c73652; }
+    button:active { transform: scale(0.97); }
+  </style>
+</head>
+<body>
+  <h1>Fork <span>It!</span></h1>
+  <div id="result"></div>
+  <button onclick="pickFood()">Fork It!</button>
+
+  <script>
+    async function pickFood() {
+      const res = await fetch('/api/random');
+      const data = await res.json();
+      document.getElementById('result').textContent = data.food;
+    }
+  </script>
+</body>
+</html>

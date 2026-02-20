@@ -1,6 +1,8 @@
 # Fork It!
 
-A web app that suggests a random food when you can't decide what to eat.
+Can't decide where to go tonight? Click the button to let us decide for you.
+
+![Fork It! screenshot](screenshot.png)
 
 ## Running locally
 

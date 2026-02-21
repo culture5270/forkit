@@ -6,12 +6,18 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 load_dotenv()
 
 FOURSQUARE_API_KEY = os.getenv("FOURSQUARE_API_KEY")
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 templates = Jinja2Templates(directory="templates")
 
 
@@ -21,7 +27,8 @@ async def index(request: Request):
 
 
 @app.get("/api/nearby")
-async def nearby_restaurants(lat: float, lng: float, radius: int = 1500, exclude: str = "", types: str = ""):
+@limiter.limit("10/minute")
+async def nearby_restaurants(request: Request, lat: float, lng: float, radius: int = 1500, exclude: str = "", types: str = ""):
     async with httpx.AsyncClient() as client:
         response = await client.get(
             "https://places-api.foursquare.com/places/search",

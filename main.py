@@ -41,7 +41,7 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
                 "radius": radius,
                 "categories": "13065",
                 "limit": 50,
-                "fields": "name,categories,location,website",
+                "fields": "name,categories,location,website,distance",
             },
         )
     response.raise_for_status()
@@ -69,8 +69,9 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
     categories = " · ".join(c["short_name"] for c in pick.get("categories", []))
     address = pick.get("location", {}).get("formatted_address", "")
     website = pick.get("website", "")
+    distance_miles = round(pick.get("distance", 0) / 1609.34, 1)
     return {
         "pick": pick["name"],
-        "description": {"categories": categories, "address": address, "website": website},
+        "description": {"categories": categories, "address": address, "website": website, "distance_miles": distance_miles},
         "restaurants": names,
     }

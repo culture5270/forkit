@@ -414,6 +414,9 @@
             cat.style.fontSize = '1.3rem';
             cat.style.fontWeight = '600';
             description.append(cat);
+            if (desc.distance_miles !== undefined) {
+              description.append(document.createElement('br'), `${desc.distance_miles} mi away`);
+            }
             if (desc.address) {
               description.append(document.createElement('br'), desc.address);
             }

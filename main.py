@@ -7,8 +7,6 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from foods import foods
-
 load_dotenv()
 
 FOURSQUARE_API_KEY = os.getenv("FOURSQUARE_API_KEY")
@@ -20,11 +18,6 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
-
-
-@app.get("/api/random")
-async def random_food():
-    return {"food": random.choice(foods)}
 
 
 @app.get("/api/nearby")
@@ -44,6 +37,7 @@ async def nearby_restaurants(lat: float, lng: float, radius: int = 1500, exclude
                 "fields": "name,categories,location,website",
             },
         )
+    response.raise_for_status()
     data = response.json()
     all_results = data.get("results", [])
     results = [

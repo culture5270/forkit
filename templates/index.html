@@ -163,13 +163,16 @@
   <div class="controls">
     <div class="radius-control">
       <label>Search radius: <span id="radius-label">10</span> miles</label>
-      <input type="range" id="radius" min="10" max="25" value="10" step="1"
-             oninput="document.getElementById('radius-label').textContent = this.value">
+      <input type="range" id="radius" min="10" max="25" value="10" step="1">
     </div>
     <button onclick="pickRestaurant()">Fork It!</button>
   </div>
 
   <script>
+    document.getElementById('radius').addEventListener('input', function () {
+      document.getElementById('radius-label').textContent = this.value;
+    });
+
     let spinning = false;
     let lastPick = '';
 
@@ -250,11 +253,21 @@
           result.textContent = final;
           lastPick = final;
           const desc = data.description;
+          description.textContent = '';
           if (desc.categories) {
-            let html = desc.categories;
-            if (desc.address) html += '<br>' + desc.address;
-            if (desc.website) html += '<br><a href="' + desc.website + '" target="_blank" rel="noopener" style="color:#e94560;">' + desc.website + '</a>';
-            description.innerHTML = html;
+            description.append(desc.categories);
+            if (desc.address) {
+              description.append(document.createElement('br'), desc.address);
+            }
+            if (desc.website) {
+              const a = document.createElement('a');
+              a.href = desc.website;
+              a.target = '_blank';
+              a.rel = 'noopener';
+              a.style.color = '#e94560';
+              a.textContent = desc.website;
+              description.append(document.createElement('br'), a);
+            }
           }
           spinning = false;
           btn.disabled = false;

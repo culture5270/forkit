@@ -33,6 +33,14 @@
       font-weight: 600;
       min-height: 2.5rem;
       color: #f5a623;
+      text-align: center;
+      max-width: 80vw;
+    }
+
+    #status {
+      font-size: 0.9rem;
+      color: #aaa;
+      min-height: 1.2rem;
     }
 
     button {
@@ -68,43 +76,78 @@
 
     button:hover::after { opacity: 0.08; }
     button:active { transform: scale(0.96) translateY(0); box-shadow: 0 2px 12px rgba(233, 69, 96, 0.4); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
   </style>
 </head>
 <body>
   <h1>Fork <span>It!</span></h1>
-  <p style="color: #aaa; font-size: 1rem; text-align: center; line-height: 2;">Can't decide where to go tonight?<br>Click the button to let us decide for you.</p>
+  <p style="color: #aaa; font-size: 1rem; text-align: center; line-height: 2;">Can't decide where to eat tonight?<br>Let us pick a restaurant near you.</p>
   <div id="result"></div>
-  <button onclick="pickFood()">Fork It!</button>
+  <div id="status"></div>
+  <button onclick="pickRestaurant()">Fork It!</button>
 
   <script>
-    const foods = ["Chinese","Burgers","Mediterranean","Mexican","Pizza","BBQ","Italian","Sushi","Seafood","Pho","Thai","Steaks"];
     let spinning = false;
 
-    async function pickFood() {
+    async function pickRestaurant() {
       if (spinning) return;
 
       const btn = document.querySelector('button');
       const result = document.getElementById('result');
+      const status = document.getElementById('status');
 
       if (result.textContent) {
         result.textContent = '';
+        status.textContent = '';
         btn.textContent = 'Fork It!';
         return;
       }
 
-      spinning = true;
+      status.textContent = 'Getting your location...';
       btn.disabled = true;
 
-      const res = await fetch('/api/random');
-      const data = await res.json();
-      const final = data.food;
+      let lat, lng;
+      try {
+        const pos = await new Promise((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
+        );
+        lat = pos.coords.latitude;
+        lng = pos.coords.longitude;
+      } catch (e) {
+        status.textContent = 'Location access denied. Please allow location and try again.';
+        btn.disabled = false;
+        return;
+      }
 
+      status.textContent = 'Finding restaurants near you...';
+
+      let data;
+      try {
+        const res = await fetch(`/api/nearby?lat=${lat}&lng=${lng}`);
+        data = await res.json();
+      } catch (e) {
+        status.textContent = 'Something went wrong. Please try again.';
+        btn.disabled = false;
+        return;
+      }
+
+      if (!data.pick) {
+        status.textContent = 'No restaurants found nearby. Try again in a different area.';
+        btn.disabled = false;
+        return;
+      }
+
+      status.textContent = '';
+      spinning = true;
+
+      const names = data.restaurants;
+      const final = data.pick;
       let delay = 60;
       let total = 0;
       const duration = 2000;
 
       function spin() {
-        result.textContent = foods[Math.floor(Math.random() * foods.length)];
+        result.textContent = names[Math.floor(Math.random() * names.length)];
         total += delay;
         delay = 60 + Math.pow(total / duration, 2) * 400;
 

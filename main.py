@@ -41,7 +41,7 @@ async def nearby_restaurants(lat: float, lng: float, radius: int = 1500):
                 "radius": radius,
                 "categories": "13065",
                 "limit": 50,
-                "fields": "name",
+                "fields": "name,categories,location",
             },
         )
     data = response.json()
@@ -49,4 +49,11 @@ async def nearby_restaurants(lat: float, lng: float, radius: int = 1500):
     if not results:
         return {"pick": None, "restaurants": []}
     names = [r["name"] for r in results]
-    return {"pick": random.choice(names), "restaurants": names}
+    pick = random.choice(results)
+    categories = " · ".join(c["short_name"] for c in pick.get("categories", []))
+    address = pick.get("location", {}).get("formatted_address", "")
+    return {
+        "pick": pick["name"],
+        "description": {"categories": categories, "address": address},
+        "restaurants": names,
+    }

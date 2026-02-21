@@ -128,6 +128,7 @@
            oninput="document.getElementById('radius-label').textContent = this.value">
   </div>
   <div id="result"></div>
+  <div id="description" style="text-align:center; color:#aaa; font-size:2rem; line-height:1.6; min-height:2.5rem;"></div>
   <div id="status"></div>
   <button onclick="pickRestaurant()">Fork It!</button>
 
@@ -139,12 +140,14 @@
 
       const btn = document.querySelector('button');
       const result = document.getElementById('result');
+      const description = document.getElementById('description');
       const status = document.getElementById('status');
       const slider = document.getElementById('radius');
       const radiusMeters = Math.round(slider.value * 1609.34);
 
       if (result.textContent) {
         result.textContent = '';
+        description.textContent = '';
         status.textContent = '';
         btn.textContent = 'Fork It!';
         slider.disabled = false;
@@ -207,6 +210,8 @@
           setTimeout(spin, delay);
         } else {
           result.textContent = final;
+          const desc = data.description;
+          if (desc.categories) description.innerHTML = desc.categories + (desc.address ? '<br>' + desc.address : '');
           spinning = false;
           btn.disabled = false;
           btn.textContent = 'Clear Selection';

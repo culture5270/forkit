@@ -36,7 +36,7 @@
 
     header p {
       color: #aaa;
-      font-size: 1rem;
+      font-size: 1.6rem;
       text-align: center;
       line-height: 1.6;
     }
@@ -95,6 +95,34 @@
       font-weight: 700;
     }
 
+    .location-control {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    #location-input {
+      width: 100%;
+      padding: 0.6rem 1rem;
+      font-size: 0.95rem;
+      font-family: system-ui, sans-serif;
+      background: #12122a;
+      color: #eee;
+      border: 1px solid #444;
+      border-radius: 50px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      text-align: center;
+    }
+
+    #location-input::placeholder { color: #666; }
+
+    #location-input:focus {
+      border-color: #e94560;
+      box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.18);
+    }
+
+    #location-input:disabled { opacity: 0.4; cursor: not-allowed; }
+
     input[type="range"] {
       -webkit-appearance: none;
       width: 220px;
@@ -115,6 +143,12 @@
     }
 
     input[type="range"]:disabled { opacity: 0.4; }
+
+    .filter-label {
+      color: #aaa;
+      font-size: 0.95rem;
+      text-align: center;
+    }
 
     .cuisine-filter {
       display: flex;
@@ -184,7 +218,7 @@
 <body>
   <header>
     <h1>Fork <span>It!</span></h1>
-    <p>Can't decide where to eat tonight?<br>Let us pick a restaurant near you.</p>
+    <p>Can't decide where to eat?<br>Let us pick a restaurant near you.</p>
   </header>
 
   <div id="result-card">
@@ -194,6 +228,16 @@
   </div>
 
   <div class="controls">
+    <div class="location-control">
+      <input
+        type="text"
+        id="location-input"
+        placeholder="Enter a street address... (or use GPS)"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </div>
+    <p class="filter-label">Choose preferences or go for it and explore the possibilities.</p>
     <div class="cuisine-filter" id="cuisine-filter">
       <label><input type="checkbox" value="american"><span>American</span></label>
       <label><input type="checkbox" value="bbq,barbecue"><span>BBQ</span></label>
@@ -248,6 +292,7 @@
       const description = document.getElementById('description');
       const status = document.getElementById('status');
       const slider = document.getElementById('radius');
+      const locationInput = document.getElementById('location-input');
       const radiusMeters = Math.round(slider.value * 1609.34);
 
       if (result.textContent) {
@@ -256,28 +301,58 @@
         status.textContent = '';
         btn.textContent = 'Fork It!';
         slider.disabled = false;
+        locationInput.value = '';
+        locationInput.disabled = false;
         getCuisineCheckboxes().forEach(cb => { cb.checked = false; cb.disabled = false; });
         return;
       }
 
-      status.textContent = 'Getting your location...';
       btn.disabled = true;
       slider.disabled = true;
+      locationInput.disabled = true;
       setCuisineDisabled(true);
 
       let lat, lng;
-      try {
-        const pos = await new Promise((resolve, reject) =>
-          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
-        );
-        lat = pos.coords.latitude;
-        lng = pos.coords.longitude;
-      } catch (e) {
-        status.textContent = 'Location access denied. Please allow location and try again.';
-        btn.disabled = false;
-        slider.disabled = false;
-        setCuisineDisabled(false);
-        return;
+      const locationQuery = locationInput.value.trim();
+
+      if (locationQuery) {
+        status.textContent = 'Looking up location...';
+        let geoData;
+        try {
+          const geoRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationQuery)}&format=json&limit=1`
+          );
+          geoData = await geoRes.json();
+        } catch (e) {
+          status.textContent = 'Could not reach the geocoding service. Check your connection and try again.';
+          btn.disabled = false; slider.disabled = false;
+          locationInput.disabled = false; setCuisineDisabled(false);
+          return;
+        }
+        if (!geoData || geoData.length === 0) {
+          status.textContent = `No location found for "${locationQuery}". Try a city name, address, or zip code.`;
+          btn.disabled = false; slider.disabled = false;
+          locationInput.disabled = false; setCuisineDisabled(false);
+          return;
+        }
+        lat = parseFloat(geoData[0].lat);
+        lng = parseFloat(geoData[0].lon);
+      } else {
+        status.textContent = 'Getting your location...';
+        try {
+          const pos = await new Promise((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
+          );
+          lat = pos.coords.latitude;
+          lng = pos.coords.longitude;
+        } catch (e) {
+          status.textContent = 'Location access denied. Please allow location and try again.';
+          btn.disabled = false;
+          slider.disabled = false;
+          locationInput.disabled = false;
+          setCuisineDisabled(false);
+          return;
+        }
       }
 
       status.textContent = 'Finding restaurants near you...';
@@ -293,6 +368,7 @@
         status.textContent = 'Something went wrong. Please try again.';
         btn.disabled = false;
         slider.disabled = false;
+        locationInput.disabled = false;
         setCuisineDisabled(false);
         return;
       }
@@ -305,6 +381,7 @@
           : 'No restaurants found nearby. Try a larger radius.';
         btn.disabled = false;
         slider.disabled = false;
+        locationInput.disabled = false;
         setCuisineDisabled(false);
         return;
       }
@@ -331,7 +408,12 @@
           const desc = data.description;
           description.textContent = '';
           if (desc.categories) {
-            description.append(desc.categories);
+            const cat = document.createElement('span');
+            cat.textContent = desc.categories;
+            cat.style.color = '#f5a623';
+            cat.style.fontSize = '1.3rem';
+            cat.style.fontWeight = '600';
+            description.append(cat);
             if (desc.address) {
               description.append(document.createElement('br'), desc.address);
             }
@@ -349,6 +431,7 @@
           btn.disabled = false;
           btn.textContent = 'Clear Selection';
           slider.disabled = false;
+          locationInput.disabled = false;
           setCuisineDisabled(false);
         }
       }

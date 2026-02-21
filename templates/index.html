@@ -77,11 +77,56 @@
     button:hover::after { opacity: 0.08; }
     button:active { transform: scale(0.96) translateY(0); box-shadow: 0 2px 12px rgba(233, 69, 96, 0.4); }
     button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .radius-control {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .radius-control label {
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+
+    .radius-control label span {
+      color: #f5a623;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 220px;
+      height: 4px;
+      border-radius: 2px;
+      background: #333;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e94560, #f5a623);
+      cursor: pointer;
+      box-shadow: 0 0 6px rgba(233, 69, 96, 0.5);
+    }
+
+    input[type="range"]:disabled {
+      opacity: 0.4;
+    }
   </style>
 </head>
 <body>
   <h1>Fork <span>It!</span></h1>
   <p style="color: #aaa; font-size: 1rem; text-align: center; line-height: 2;">Can't decide where to eat tonight?<br>Let us pick a restaurant near you.</p>
+  <div class="radius-control">
+    <label>Search radius: <span id="radius-label">10</span> miles</label>
+    <input type="range" id="radius" min="10" max="25" value="10" step="1"
+           oninput="document.getElementById('radius-label').textContent = this.value">
+  </div>
   <div id="result"></div>
   <div id="status"></div>
   <button onclick="pickRestaurant()">Fork It!</button>
@@ -95,16 +140,20 @@
       const btn = document.querySelector('button');
       const result = document.getElementById('result');
       const status = document.getElementById('status');
+      const slider = document.getElementById('radius');
+      const radiusMeters = Math.round(slider.value * 1609.34);
 
       if (result.textContent) {
         result.textContent = '';
         status.textContent = '';
         btn.textContent = 'Fork It!';
+        slider.disabled = false;
         return;
       }
 
       status.textContent = 'Getting your location...';
       btn.disabled = true;
+      slider.disabled = true;
 
       let lat, lng;
       try {
@@ -116,6 +165,7 @@
       } catch (e) {
         status.textContent = 'Location access denied. Please allow location and try again.';
         btn.disabled = false;
+        slider.disabled = false;
         return;
       }
 
@@ -123,17 +173,19 @@
 
       let data;
       try {
-        const res = await fetch(`/api/nearby?lat=${lat}&lng=${lng}`);
+        const res = await fetch(`/api/nearby?lat=${lat}&lng=${lng}&radius=${radiusMeters}`);
         data = await res.json();
       } catch (e) {
         status.textContent = 'Something went wrong. Please try again.';
         btn.disabled = false;
+        slider.disabled = false;
         return;
       }
 
       if (!data.pick) {
-        status.textContent = 'No restaurants found nearby. Try again in a different area.';
+        status.textContent = 'No restaurants found nearby. Try a larger radius.';
         btn.disabled = false;
+        slider.disabled = false;
         return;
       }
 
@@ -158,6 +210,7 @@
           spinning = false;
           btn.disabled = false;
           btn.textContent = 'Clear Selection';
+          slider.disabled = false;
         }
       }
 

@@ -47,16 +47,20 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
     response.raise_for_status()
     data = response.json()
     all_results = data.get("results", [])
-    results = [
-        r for r in all_results
-        if any("/food/" in c.get("icon", {}).get("prefix", "") for c in r.get("categories", []))
-    ]
     if types:
+        # Cuisine filter is active — search all 50 results so non-food venues
+        # (parks, theaters, bars) are checked but won't match cuisine keywords.
         type_keywords = [t.strip().lower() for t in types.split(",")]
         def matches_type(r):
             names = " ".join(c.get("short_name", "").lower() for c in r.get("categories", []))
             return any(kw in names for kw in type_keywords)
-        results = [r for r in results if matches_type(r)]
+        results = [r for r in all_results if matches_type(r)]
+    else:
+        # No cuisine filter — use the icon path to exclude non-food venues.
+        results = [
+            r for r in all_results
+            if any("/food/" in c.get("icon", {}).get("prefix", "") for c in r.get("categories", []))
+        ]
     if not results:
         return {"pick": None, "restaurants": []}
     names = [r["name"] for r in results]

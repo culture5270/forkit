@@ -21,7 +21,7 @@ async def index(request: Request):
 
 
 @app.get("/api/nearby")
-async def nearby_restaurants(lat: float, lng: float, radius: int = 1500, exclude: str = ""):
+async def nearby_restaurants(lat: float, lng: float, radius: int = 1500, exclude: str = "", types: str = ""):
     async with httpx.AsyncClient() as client:
         response = await client.get(
             "https://places-api.foursquare.com/places/search",
@@ -44,6 +44,12 @@ async def nearby_restaurants(lat: float, lng: float, radius: int = 1500, exclude
         r for r in all_results
         if any("/food/" in c.get("icon", {}).get("prefix", "") for c in r.get("categories", []))
     ]
+    if types:
+        type_keywords = [t.strip().lower() for t in types.split(",")]
+        def matches_type(r):
+            names = " ".join(c.get("short_name", "").lower() for c in r.get("categories", []))
+            return any(kw in names for kw in type_keywords)
+        results = [r for r in results if matches_type(r)]
     if not results:
         return {"pick": None, "restaurants": []}
     names = [r["name"] for r in results]

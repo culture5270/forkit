@@ -171,6 +171,7 @@
 
   <script>
     let spinning = false;
+    let lastPick = '';
 
     async function pickRestaurant() {
       if (spinning) return;
@@ -213,7 +214,7 @@
 
       let data;
       try {
-        const res = await fetch(`/api/nearby?lat=${lat}&lng=${lng}&radius=${radiusMeters}`);
+        const res = await fetch(`/api/nearby?lat=${lat}&lng=${lng}&radius=${radiusMeters}&exclude=${encodeURIComponent(lastPick)}`);
         data = await res.json();
       } catch (e) {
         status.textContent = 'Something went wrong. Please try again.';
@@ -247,8 +248,14 @@
           setTimeout(spin, delay);
         } else {
           result.textContent = final;
+          lastPick = final;
           const desc = data.description;
-          if (desc.categories) description.innerHTML = desc.categories + (desc.address ? '<br>' + desc.address : '');
+          if (desc.categories) {
+            let html = desc.categories;
+            if (desc.address) html += '<br>' + desc.address;
+            if (desc.website) html += '<br><a href="' + desc.website + '" target="_blank" rel="noopener" style="color:#e94560;">' + desc.website + '</a>';
+            description.innerHTML = html;
+          }
           spinning = false;
           btn.disabled = false;
           btn.textContent = 'Clear Selection';

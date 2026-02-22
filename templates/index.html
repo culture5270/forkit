@@ -237,6 +237,10 @@
         spellcheck="false"
       />
     </div>
+    <div class="radius-control">
+      <label>Search radius: <span id="radius-label">10</span> miles</label>
+      <input type="range" id="radius" min="10" max="25" value="10" step="1">
+    </div>
     <p class="filter-label">Choose preferences or go for it and explore the possibilities.</p>
     <div class="cuisine-filter" id="cuisine-filter">
       <label><input type="checkbox" value="american"><span>American</span></label>
@@ -260,10 +264,6 @@
       <label><input type="checkbox" value="thai"><span>Thai</span></label>
       <label><input type="checkbox" value="vietnamese,pho"><span>Vietnamese</span></label>
       <label><input type="checkbox" value="wings"><span>Wings</span></label>
-    </div>
-    <div class="radius-control">
-      <label>Search radius: <span id="radius-label">10</span> miles</label>
-      <input type="range" id="radius" min="10" max="25" value="10" step="1">
     </div>
     <button onclick="pickRestaurant()">Fork It!</button>
   </div>

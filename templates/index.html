@@ -213,6 +213,30 @@
     button:hover::after { opacity: 0.08; }
     button:active { transform: scale(0.96) translateY(0); box-shadow: 0 2px 12px rgba(233, 69, 96, 0.4); }
     button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    /* Tablet */
+    @media (max-width: 768px) {
+      body { gap: 2rem; padding: 1.5rem; }
+      h1 { font-size: 2.5rem; }
+      header p { font-size: 1.2rem; }
+      #result { font-size: 1.75rem; }
+      .location-control { max-width: 100%; }
+      .cuisine-filter { max-width: 100%; }
+      input[type="range"] { width: 180px; }
+    }
+
+    /* Phone */
+    @media (max-width: 480px) {
+      body { gap: 1.5rem; padding: 1rem; justify-content: flex-start; padding-top: 2rem; }
+      h1 { font-size: 2rem; }
+      header p { font-size: 1rem; }
+      #result { font-size: 1.4rem; }
+      #result-card { min-height: 5rem; }
+      #description { font-size: 0.9rem; }
+      .cuisine-filter input[type="checkbox"] + span { font-size: 0.8rem; padding: 0.3rem 0.7rem; }
+      button { font-size: 1rem; padding: 0.8rem 2rem; }
+      input[type="range"] { width: 100%; max-width: 260px; }
+    }
   </style>
 </head>
 <body>

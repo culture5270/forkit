@@ -3,22 +3,52 @@ import random
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, Form, Depends
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from passlib.context import CryptContext
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from sqlmodel import Session, select
+from starlette.middleware.sessions import SessionMiddleware
+
+from database import create_db_and_tables, engine, get_session
+from models import Comment, User
 
 load_dotenv()
 
 FOURSQUARE_API_KEY = os.getenv("FOURSQUARE_API_KEY")
+SESSION_SECRET = os.getenv("SESSION_SECRET", "change-me-in-production")
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI()
+app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 templates = Jinja2Templates(directory="templates")
+
+
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
+    if engine is None:
+        return
+    admin_username = os.getenv("ADMIN_USERNAME")
+    admin_password = os.getenv("ADMIN_PASSWORD")
+    if not admin_username or not admin_password:
+        return
+    with Session(engine) as session:
+        existing = session.exec(select(User).where(User.username == admin_username)).first()
+        if not existing:
+            user = User(
+                username=admin_username,
+                password_hash=pwd_context.hash(admin_password),
+            )
+            session.add(user)
+            session.commit()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -48,15 +78,12 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
     data = response.json()
     all_results = data.get("results", [])
     if types:
-        # Cuisine filter is active — search all 50 results so non-food venues
-        # (parks, theaters, bars) are checked but won't match cuisine keywords.
         type_keywords = [t.strip().lower() for t in types.split(",")]
         def matches_type(r):
             names = " ".join(c.get("short_name", "").lower() for c in r.get("categories", []))
             return any(kw in names for kw in type_keywords)
         results = [r for r in all_results if matches_type(r)]
     else:
-        # No cuisine filter — use the icon path to exclude non-food venues.
         results = [
             r for r in all_results
             if any("/food/" in c.get("icon", {}).get("prefix", "") for c in r.get("categories", []))
@@ -75,3 +102,59 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
         "description": {"categories": categories, "address": address, "website": website, "distance_miles": distance_miles},
         "restaurants": names,
     }
+
+
+@app.post("/api/comments")
+@limiter.limit("5/minute")
+async def post_comment(
+    request: Request,
+    name: str = Form(default="Anonymous"),
+    message: str = Form(...),
+    session: Session = Depends(get_session),
+):
+    if engine is None:
+        return {"error": "Database not configured"}, 503
+    name = name.strip() or "Anonymous"
+    message = message.strip()
+    if not message:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422, detail="Message is required")
+    comment = Comment(name=name[:100], message=message[:1000])
+    session.add(comment)
+    session.commit()
+    return {"ok": True}
+
+
+@app.get("/admin/login", response_class=HTMLResponse)
+async def admin_login_get(request: Request):
+    if request.session.get("user"):
+        return RedirectResponse("/admin/dashboard", status_code=302)
+    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+
+
+@app.post("/admin/login", response_class=HTMLResponse)
+async def admin_login_post(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    session: Session = Depends(get_session),
+):
+    user = session.exec(select(User).where(User.username == username)).first()
+    if user and pwd_context.verify(password, user.password_hash):
+        request.session["user"] = username
+        return RedirectResponse("/admin/dashboard", status_code=302)
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid username or password"})
+
+
+@app.get("/admin/logout")
+async def admin_logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/admin/login", status_code=302)
+
+
+@app.get("/admin/dashboard", response_class=HTMLResponse)
+async def admin_dashboard(request: Request, session: Session = Depends(get_session)):
+    if not request.session.get("user"):
+        return RedirectResponse("/admin/login", status_code=302)
+    comments = session.exec(select(Comment).order_by(Comment.created_at.desc())).all()
+    return templates.TemplateResponse("dashboard.html", {"request": request, "comments": comments})

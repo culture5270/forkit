@@ -5,3 +5,7 @@ python-multipart
 httpx
 python-dotenv
 slowapi
+sqlmodel
+psycopg2-binary
+passlib[bcrypt]
+itsdangerous

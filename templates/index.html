@@ -238,6 +238,79 @@
       button { font-size: 1rem; padding: 0.8rem 2rem; }
       input[type="range"] { width: 100%; max-width: 260px; }
     }
+
+    /* Comment form */
+    .comment-section {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .comment-section h2 {
+      font-size: 1rem;
+      color: #aaa;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: 0.03em;
+    }
+
+    .comment-section input[type="text"],
+    .comment-section textarea {
+      width: 100%;
+      padding: 0.6rem 1rem;
+      font-size: 0.95rem;
+      font-family: system-ui, sans-serif;
+      background: #12122a;
+      color: #eee;
+      border: 1px solid #444;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .comment-section input[type="text"]::placeholder,
+    .comment-section textarea::placeholder { color: #555; }
+
+    .comment-section input[type="text"]:focus,
+    .comment-section textarea:focus {
+      border-color: #e94560;
+      box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.18);
+    }
+
+    .comment-section textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .comment-section .submit-btn {
+      align-self: center;
+      padding: 0.6rem 2rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #e94560, #f5a623);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      transition: opacity 0.15s;
+      box-shadow: none;
+    }
+
+    .comment-section .submit-btn:hover { opacity: 0.85; transform: none; }
+    .comment-section .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #comment-status {
+      font-size: 0.85rem;
+      text-align: center;
+      min-height: 1.2em;
+    }
+
+    #comment-status.success { color: #4caf7d; }
+    #comment-status.error { color: #e94560; }
   </style>
 </head>
 <body>
@@ -291,6 +364,14 @@
       <label><input type="checkbox" value="wings"><span>Wings</span></label>
     </div>
     <button onclick="pickRestaurant()">Fork It!</button>
+  </div>
+
+  <div class="comment-section">
+    <h2>Leave a comment</h2>
+    <input type="text" id="comment-name" placeholder="Your name (optional)" maxlength="100">
+    <textarea id="comment-message" placeholder="What do you think of Fork It?" maxlength="1000"></textarea>
+    <button class="submit-btn" onclick="submitComment()">Send</button>
+    <div id="comment-status"></div>
   </div>
 
   <footer style="color: #444; font-size: 0.8rem;">
@@ -468,6 +549,47 @@
       }
 
       spin();
+    }
+
+    async function submitComment() {
+      const nameEl = document.getElementById('comment-name');
+      const messageEl = document.getElementById('comment-message');
+      const statusEl = document.getElementById('comment-status');
+      const btn = document.querySelector('.submit-btn');
+
+      const message = messageEl.value.trim();
+      if (!message) {
+        statusEl.className = 'error';
+        statusEl.textContent = 'Please write a message before sending.';
+        return;
+      }
+
+      btn.disabled = true;
+      statusEl.className = '';
+      statusEl.textContent = '';
+
+      const body = new URLSearchParams();
+      body.append('name', nameEl.value.trim() || 'Anonymous');
+      body.append('message', message);
+
+      try {
+        const res = await fetch('/api/comments', { method: 'POST', body });
+        if (res.ok) {
+          statusEl.className = 'success';
+          statusEl.textContent = 'Thanks for your comment!';
+          nameEl.value = '';
+          messageEl.value = '';
+        } else {
+          const data = await res.json().catch(() => ({}));
+          statusEl.className = 'error';
+          statusEl.textContent = data.detail || 'Something went wrong. Please try again.';
+        }
+      } catch {
+        statusEl.className = 'error';
+        statusEl.textContent = 'Could not send. Check your connection and try again.';
+      } finally {
+        btn.disabled = false;
+      }
     }
   </script>
 </body>

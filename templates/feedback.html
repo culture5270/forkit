@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leave a comment — Fork It!</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍴</text></svg>">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 2rem;
+      padding: 2rem;
+    }
+    h1 { font-size: 2rem; letter-spacing: -1px; }
+    h1 span { color: #e94560; }
+    .form-card {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 0.6rem 1rem;
+      font-size: 0.95rem;
+      font-family: system-ui, sans-serif;
+      background: #12122a;
+      color: #eee;
+      border: 1px solid #444;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input[type="text"]::placeholder,
+    textarea::placeholder { color: #555; }
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: #e94560;
+      box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.18);
+    }
+    textarea { resize: vertical; min-height: 120px; }
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+    button {
+      padding: 0.7rem 2rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #e94560, #f5a623);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      box-shadow: 0 4px 24px rgba(233, 69, 96, 0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(233, 69, 96, 0.6); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    a.back {
+      font-size: 0.9rem;
+      color: #666;
+      text-decoration: none;
+      padding: 0.7rem 1.5rem;
+      border: 1px solid #333;
+      border-radius: 50px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    a.back:hover { color: #aaa; border-color: #555; }
+    #status {
+      font-size: 0.85rem;
+      text-align: center;
+      min-height: 1.2em;
+    }
+    #status.success { color: #4caf7d; }
+    #status.error { color: #e94560; }
+  </style>
+</head>
+<body>
+  <h1>Fork <span>It!</span></h1>
+  <div class="form-card">
+    <input type="text" id="comment-name" placeholder="Your name (optional)" maxlength="100">
+    <textarea id="comment-message" placeholder="What do you think of Fork It?" maxlength="1000"></textarea>
+    <div class="actions">
+      <a href="/" class="back">Back</a>
+      <button onclick="submitComment()">Send</button>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    async function submitComment() {
+      const nameEl = document.getElementById('comment-name');
+      const messageEl = document.getElementById('comment-message');
+      const statusEl = document.getElementById('status');
+      const btn = document.querySelector('button');
+
+      const message = messageEl.value.trim();
+      if (!message) {
+        statusEl.className = 'error';
+        statusEl.textContent = 'Please write a message before sending.';
+        return;
+      }
+
+      btn.disabled = true;
+      statusEl.className = '';
+      statusEl.textContent = '';
+
+      const body = new URLSearchParams();
+      body.append('name', nameEl.value.trim() || 'Anonymous');
+      body.append('message', message);
+
+      try {
+        const res = await fetch('/api/comments', { method: 'POST', body });
+        if (res.ok) {
+          statusEl.className = 'success';
+          statusEl.textContent = 'Thanks for your comment!';
+          nameEl.value = '';
+          messageEl.value = '';
+        } else {
+          const data = await res.json().catch(() => ({}));
+          statusEl.className = 'error';
+          statusEl.textContent = data.detail || 'Something went wrong. Please try again.';
+        }
+      } catch {
+        statusEl.className = 'error';
+        statusEl.textContent = 'Could not send. Check your connection and try again.';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

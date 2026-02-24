@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from passlib.context import CryptContext
+import bcrypt
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -21,7 +21,11 @@ load_dotenv()
 FOURSQUARE_API_KEY = os.getenv("FOURSQUARE_API_KEY")
 SESSION_SECRET = os.getenv("SESSION_SECRET", "change-me-in-production")
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI()
@@ -45,7 +49,7 @@ def on_startup():
         if not existing:
             user = User(
                 username=admin_username,
-                password_hash=pwd_context.hash(admin_password),
+                password_hash=hash_password(admin_password),
             )
             session.add(user)
             session.commit()
@@ -140,7 +144,7 @@ async def admin_login_post(
     session: Session = Depends(get_session),
 ):
     user = session.exec(select(User).where(User.username == username)).first()
-    if user and pwd_context.verify(password, user.password_hash):
+    if user and verify_password(password, user.password_hash):
         request.session["user"] = username
         return RedirectResponse("/admin/dashboard", status_code=302)
     return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid username or password"})

@@ -7,5 +7,5 @@ python-dotenv
 slowapi
 sqlmodel
 psycopg2-binary
-passlib[bcrypt]
+bcrypt
 itsdangerous

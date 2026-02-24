@@ -330,9 +330,8 @@
         status.textContent = '';
         btn.textContent = 'Fork It!';
         slider.disabled = false;
-        locationInput.value = '';
         locationInput.disabled = false;
-        getCuisineCheckboxes().forEach(cb => { cb.checked = false; cb.disabled = false; });
+        getCuisineCheckboxes().forEach(cb => { cb.disabled = false; });
         return;
       }
 

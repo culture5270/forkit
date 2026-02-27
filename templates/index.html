@@ -8,10 +8,32 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg: #1a1a2e;
+      --bg-input: #12122a;
+      --text: #eee;
+      --text-muted: #aaa;
+      --text-subtle: #666;
+      --border: #444;
+      --border-subtle: #333;
+      --range-track: #333;
+    }
+
+    body.light {
+      --bg: #f5f5f7;
+      --bg-input: #ffffff;
+      --text: #1a1a2e;
+      --text-muted: #555;
+      --text-subtle: #999;
+      --border: #ccc;
+      --border-subtle: #e0e0e0;
+      --range-track: #ccc;
+    }
+
     body {
       font-family: system-ui, sans-serif;
-      background: #1a1a2e;
-      color: #eee;
+      background: var(--bg);
+      color: var(--text);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -19,6 +41,7 @@
       min-height: 100vh;
       gap: 3rem;
       padding: 2rem;
+      transition: background 0.2s, color 0.2s;
     }
 
     header {
@@ -36,7 +59,7 @@
     h1 span { color: #e94560; }
 
     header p {
-      color: #aaa;
+      color: var(--text-muted);
       font-size: 1.6rem;
       text-align: center;
       line-height: 1.6;
@@ -61,14 +84,14 @@
 
     #description {
       text-align: center;
-      color: #aaa;
+      color: var(--text-muted);
       font-size: 1rem;
       line-height: 1.6;
     }
 
     #status {
       font-size: 0.9rem;
-      color: #aaa;
+      color: var(--text-muted);
       text-align: center;
     }
 
@@ -88,7 +111,7 @@
 
     .radius-control label {
       font-size: 0.9rem;
-      color: #aaa;
+      color: var(--text-muted);
     }
 
     .radius-control label span {
@@ -106,16 +129,16 @@
       padding: 0.6rem 1rem;
       font-size: 0.95rem;
       font-family: system-ui, sans-serif;
-      background: #12122a;
-      color: #eee;
-      border: 1px solid #444;
+      background: var(--bg-input);
+      color: var(--text);
+      border: 1px solid var(--border);
       border-radius: 50px;
       outline: none;
       transition: border-color 0.15s, box-shadow 0.15s;
       text-align: center;
     }
 
-    #location-input::placeholder { color: #666; }
+    #location-input::placeholder { color: var(--text-subtle); }
 
     #location-input:focus {
       border-color: #e94560;
@@ -129,7 +152,7 @@
       width: 220px;
       height: 4px;
       border-radius: 2px;
-      background: #333;
+      background: var(--range-track);
       outline: none;
     }
 
@@ -146,7 +169,7 @@
     input[type="range"]:disabled { opacity: 0.4; }
 
     .filter-label {
-      color: #aaa;
+      color: var(--text-muted);
       font-size: 0.95rem;
       text-align: center;
     }
@@ -159,9 +182,7 @@
       max-width: 420px;
     }
 
-    .cuisine-filter label {
-      cursor: pointer;
-    }
+    .cuisine-filter label { cursor: pointer; }
 
     .cuisine-filter input[type="checkbox"] { display: none; }
 
@@ -170,8 +191,8 @@
       padding: 0.35rem 0.85rem;
       border-radius: 50px;
       font-size: 0.85rem;
-      border: 1px solid #444;
-      color: #aaa;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
       transition: all 0.15s;
       user-select: none;
     }
@@ -215,6 +236,28 @@
     button:active { transform: scale(0.96) translateY(0); box-shadow: 0 2px 12px rgba(233, 69, 96, 0.4); }
     button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
+    #theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 0.35rem 0.75rem;
+      font-size: 1rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      box-shadow: none;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+      z-index: 100;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    #theme-toggle:hover { border-color: #e94560; color: #e94560; transform: none; box-shadow: none; }
+    #theme-toggle::after { display: none; }
+
     /* Tablet */
     @media (max-width: 768px) {
       body { gap: 2rem; padding: 1.5rem; }
@@ -241,15 +284,16 @@
 
     a.leave-comment {
       font-size: 0.85rem;
-      color: #555;
+      color: var(--text-subtle);
       text-decoration: none;
       transition: color 0.15s;
     }
 
-    a.leave-comment:hover { color: #aaa; }
+    a.leave-comment:hover { color: var(--text-muted); }
   </style>
 </head>
 <body>
+  <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
   <header>
     <h1>Fork <span>It!</span></h1>
     <p>Can't decide where to eat?<br>Let us pick a restaurant near you.</p>
@@ -311,6 +355,18 @@
   </footer>
 
   <script>
+    // Theme toggle
+    const themeBtn = document.getElementById('theme-toggle');
+    if (localStorage.getItem('forkit_theme') === 'light') {
+      document.body.classList.add('light');
+      themeBtn.textContent = '☀️';
+    }
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light');
+      themeBtn.textContent = isLight ? '☀️' : '🌙';
+      localStorage.setItem('forkit_theme', isLight ? 'light' : 'dark');
+    }
+
     const radiusEl = document.getElementById('radius');
     const locationInputEl = document.getElementById('location-input');
 

@@ -299,7 +299,10 @@
       <label><input type="checkbox" value="vietnamese,pho"><span>Vietnamese</span></label>
       <label><input type="checkbox" value="wings"><span>Wings</span></label>
     </div>
-    <button onclick="pickRestaurant()">Fork It!</button>
+    <div style="display:flex; gap:1rem; flex-wrap:wrap; justify-content:center;">
+      <button id="fork-btn" onclick="pickRestaurant()">Fork It!</button>
+      <button id="pick-again-btn" onclick="pickAgain()" style="display:none; background:transparent; border:2px solid #e94560; box-shadow:none;">Pick Again</button>
+    </div>
   </div>
 
   <footer style="color: #444; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
@@ -323,10 +326,59 @@
       getCuisineCheckboxes().forEach(cb => cb.disabled = disabled);
     }
 
+    function setSearching(on) {
+      const btn = document.getElementById('fork-btn');
+      const pickAgainBtn = document.getElementById('pick-again-btn');
+      const slider = document.getElementById('radius');
+      const locationInput = document.getElementById('location-input');
+      btn.disabled = on;
+      if (pickAgainBtn.style.display !== 'none') pickAgainBtn.disabled = on;
+      slider.disabled = on;
+      locationInput.disabled = on;
+      setCuisineDisabled(on);
+    }
+
+    async function pickAgain() {
+      const result = document.getElementById('result');
+      const description = document.getElementById('description');
+      const status = document.getElementById('status');
+      result.textContent = '';
+      description.textContent = '';
+      status.textContent = '';
+      await doSearch();
+    }
+
     async function pickRestaurant() {
       if (spinning) return;
 
-      const btn = document.querySelector('button');
+      const btn = document.getElementById('fork-btn');
+      const pickAgainBtn = document.getElementById('pick-again-btn');
+      const result = document.getElementById('result');
+      const description = document.getElementById('description');
+      const status = document.getElementById('status');
+      const slider = document.getElementById('radius');
+      const locationInput = document.getElementById('location-input');
+
+      if (result.textContent) {
+        result.textContent = '';
+        description.textContent = '';
+        status.textContent = '';
+        btn.textContent = 'Fork It!';
+        pickAgainBtn.style.display = 'none';
+        slider.disabled = false;
+        locationInput.disabled = false;
+        getCuisineCheckboxes().forEach(cb => { cb.disabled = false; });
+        return;
+      }
+
+      await doSearch();
+    }
+
+    async function doSearch() {
+      if (spinning) return;
+
+      const btn = document.getElementById('fork-btn');
+      const pickAgainBtn = document.getElementById('pick-again-btn');
       const result = document.getElementById('result');
       const description = document.getElementById('description');
       const status = document.getElementById('status');
@@ -334,21 +386,7 @@
       const locationInput = document.getElementById('location-input');
       const radiusMeters = Math.round(slider.value * 1609.34);
 
-      if (result.textContent) {
-        result.textContent = '';
-        description.textContent = '';
-        status.textContent = '';
-        btn.textContent = 'Fork It!';
-        slider.disabled = false;
-        locationInput.disabled = false;
-        getCuisineCheckboxes().forEach(cb => { cb.disabled = false; });
-        return;
-      }
-
-      btn.disabled = true;
-      slider.disabled = true;
-      locationInput.disabled = true;
-      setCuisineDisabled(true);
+      setSearching(true);
 
       let lat, lng;
       const locationQuery = locationInput.value.trim();
@@ -363,14 +401,12 @@
           geoData = await geoRes.json();
         } catch (e) {
           status.textContent = 'Could not reach the geocoding service. Check your connection and try again.';
-          btn.disabled = false; slider.disabled = false;
-          locationInput.disabled = false; setCuisineDisabled(false);
+          setSearching(false);
           return;
         }
         if (!geoData || geoData.length === 0) {
           status.textContent = `No location found for "${locationQuery}". Try a city name, address, or zip code.`;
-          btn.disabled = false; slider.disabled = false;
-          locationInput.disabled = false; setCuisineDisabled(false);
+          setSearching(false);
           return;
         }
         lat = parseFloat(geoData[0].lat);
@@ -385,10 +421,7 @@
           lng = pos.coords.longitude;
         } catch (e) {
           status.textContent = 'Location access denied. Please allow location and try again.';
-          btn.disabled = false;
-          slider.disabled = false;
-          locationInput.disabled = false;
-          setCuisineDisabled(false);
+          setSearching(false);
           return;
         }
       }
@@ -404,10 +437,7 @@
         data = await res.json();
       } catch (e) {
         status.textContent = 'Something went wrong. Please try again.';
-        btn.disabled = false;
-        slider.disabled = false;
-        locationInput.disabled = false;
-        setCuisineDisabled(false);
+        setSearching(false);
         return;
       }
 
@@ -417,10 +447,7 @@
         status.textContent = selectedLabels.length
           ? `No ${selectedLabels.join('/').toLowerCase()} restaurants found nearby. Try a larger radius or different cuisine.`
           : 'No restaurants found nearby. Try a larger radius.';
-        btn.disabled = false;
-        slider.disabled = false;
-        locationInput.disabled = false;
-        setCuisineDisabled(false);
+        setSearching(false);
         return;
       }
 
@@ -469,11 +496,9 @@
             }
           }
           spinning = false;
-          btn.disabled = false;
-          btn.textContent = 'Clear Selection';
-          slider.disabled = false;
-          locationInput.disabled = false;
-          setCuisineDisabled(false);
+          btn.textContent = 'Clear';
+          pickAgainBtn.style.display = 'inline-block';
+          setSearching(false);
         }
       }
 

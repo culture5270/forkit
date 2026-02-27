@@ -311,8 +311,25 @@
   </footer>
 
   <script>
-    document.getElementById('radius').addEventListener('input', function () {
+    const radiusEl = document.getElementById('radius');
+    const locationInputEl = document.getElementById('location-input');
+
+    // Restore saved address and radius
+    const savedAddress = localStorage.getItem('forkit_address');
+    const savedRadius = localStorage.getItem('forkit_radius');
+    if (savedAddress) locationInputEl.value = savedAddress;
+    if (savedRadius) {
+      radiusEl.value = savedRadius;
+      document.getElementById('radius-label').textContent = savedRadius;
+    }
+
+    radiusEl.addEventListener('input', function () {
       document.getElementById('radius-label').textContent = this.value;
+      localStorage.setItem('forkit_radius', this.value);
+    });
+
+    locationInputEl.addEventListener('change', function () {
+      localStorage.setItem('forkit_address', this.value.trim());
     });
 
     let spinning = false;

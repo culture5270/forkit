@@ -70,6 +70,11 @@ async def terms(request: Request):
     return templates.TemplateResponse("terms.html", {"request": request})
 
 
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy(request: Request):
+    return templates.TemplateResponse("privacy.html", {"request": request})
+
+
 @app.get("/api/nearby")
 @limiter.limit("10/minute")
 async def nearby_restaurants(request: Request, lat: float, lng: float, radius: int = 1500, exclude: str = "", types: str = ""):

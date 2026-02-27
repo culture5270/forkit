@@ -72,6 +72,18 @@
     .name { color: #f5a623; font-weight: 600; white-space: nowrap; }
     .message { color: #ccc; max-width: 600px; word-break: break-word; }
     .date { color: #555; white-space: nowrap; font-size: 0.82rem; }
+    .delete-btn {
+      background: none;
+      border: 1px solid #333;
+      color: #555;
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .delete-btn:hover { border-color: #e94560; color: #e94560; }
   </style>
 </head>
 <body>
@@ -89,14 +101,16 @@
         <th>Name</th>
         <th>Message</th>
         <th>Date</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
       {% for c in comments %}
-      <tr>
+      <tr id="row-{{ c.id }}">
         <td class="name">{{ c.name }}</td>
         <td class="message">{{ c.message }}</td>
         <td class="date">{{ c.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+        <td><button class="delete-btn" onclick="deleteComment({{ c.id }}, this)">Delete</button></td>
       </tr>
       {% endfor %}
     </tbody>
@@ -104,5 +118,18 @@
   {% else %}
   <p class="empty">No comments yet.</p>
   {% endif %}
+  <script>
+    async function deleteComment(id, btn) {
+      if (!confirm('Delete this comment?')) return;
+      btn.disabled = true;
+      const res = await fetch(`/admin/comments/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        document.getElementById(`row-${id}`).remove();
+      } else {
+        btn.disabled = false;
+        alert('Failed to delete. Please try again.');
+      }
+    }
+  </script>
 </body>
 </html>

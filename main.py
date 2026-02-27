@@ -167,3 +167,17 @@ async def admin_dashboard(request: Request, session: Session = Depends(get_sessi
         return RedirectResponse("/admin/login", status_code=302)
     comments = session.exec(select(Comment).order_by(Comment.created_at.desc())).all()
     return templates.TemplateResponse("dashboard.html", {"request": request, "comments": comments})
+
+
+@app.delete("/admin/comments/{comment_id}")
+async def delete_comment(comment_id: int, request: Request, session: Session = Depends(get_session)):
+    if not request.session.get("user"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401)
+    comment = session.get(Comment, comment_id)
+    if not comment:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404)
+    session.delete(comment)
+    session.commit()
+    return {"ok": True}

@@ -65,6 +65,11 @@ async def feedback(request: Request):
     return templates.TemplateResponse("feedback.html", {"request": request})
 
 
+@app.get("/terms", response_class=HTMLResponse)
+async def terms(request: Request):
+    return templates.TemplateResponse("terms.html", {"request": request})
+
+
 @app.get("/api/nearby")
 @limiter.limit("10/minute")
 async def nearby_restaurants(request: Request, lat: float, lng: float, radius: int = 1500, exclude: str = "", types: str = ""):

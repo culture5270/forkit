@@ -388,6 +388,16 @@
       localStorage.setItem('forkit_address', this.value.trim());
     });
 
+    // Restore saved cuisine filters
+    const savedCuisines = JSON.parse(localStorage.getItem('forkit_cuisines') || '[]');
+    document.querySelectorAll('#cuisine-filter input[type="checkbox"]').forEach(cb => {
+      if (savedCuisines.includes(cb.value)) cb.checked = true;
+      cb.addEventListener('change', () => {
+        const checked = [...document.querySelectorAll('#cuisine-filter input[type="checkbox"]:checked')].map(c => c.value);
+        localStorage.setItem('forkit_cuisines', JSON.stringify(checked));
+      });
+    });
+
     let spinning = false;
     let lastPick = '';
 

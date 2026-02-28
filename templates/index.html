@@ -417,7 +417,7 @@
 
     let spinning = false;
     let pickHistory = [];
-    let lastWebsite = '';
+    let lastAddress = '';
 
     function getCuisineCheckboxes() {
       return document.querySelectorAll('#cuisine-filter input[type="checkbox"]');
@@ -444,8 +444,8 @@
     async function sharePick() {
       const name = document.getElementById('result').textContent;
       if (!name) return;
-      const text = lastWebsite
-        ? `Fork It! picked ${name} for me 🍴\n${lastWebsite}\n\nFind your next restaurant: ${window.location.href}`
+      const text = lastAddress
+        ? `Fork It! picked ${name} for me 🍴\n${lastAddress}\n\nFind your next restaurant: ${window.location.href}`
         : `Fork It! picked ${name} for me 🍴\n${window.location.href}`;
       const btn = document.getElementById('share-btn');
       try {
@@ -622,10 +622,12 @@
               description.append(document.createElement('br'), `${desc.distance_miles} mi away`);
             }
             if (desc.address) {
+              lastAddress = desc.address;
               description.append(document.createElement('br'), desc.address);
+            } else {
+              lastAddress = '';
             }
             if (desc.website) {
-              lastWebsite = desc.website;
               const a = document.createElement('a');
               a.href = desc.website;
               a.target = '_blank';
@@ -633,8 +635,6 @@
               a.style.color = '#e94560';
               a.textContent = desc.website;
               description.append(document.createElement('br'), a);
-            } else {
-              lastWebsite = '';
             }
           }
           spinning = false;

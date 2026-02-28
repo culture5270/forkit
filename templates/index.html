@@ -70,7 +70,7 @@
       flex-direction: column;
       align-items: center;
       gap: 0.5rem;
-      min-height: 7rem;
+      min-height: 9rem;
       justify-content: center;
     }
 
@@ -530,9 +530,18 @@
       if (!data.pick) {
         const selectedLabels = [...document.querySelectorAll('#cuisine-filter input:checked')]
           .map(cb => cb.closest('label').querySelector('span').textContent);
-        status.textContent = selectedLabels.length
-          ? `No ${selectedLabels.join('/').toLowerCase()} restaurants found nearby. Try a larger radius or different cuisine.`
-          : 'No restaurants found nearby. Try a larger radius.';
+        const suggestion = selectedLabels.length
+          ? `No ${selectedLabels.join(' or ').toLowerCase()} restaurants found nearby.`
+          : 'No restaurants found nearby.';
+        const hint = selectedLabels.length
+          ? 'Try a larger radius or removing some filters.'
+          : 'Try a larger radius or a different location.';
+        status.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0.4rem;padding:0.5rem 0">
+            <span style="font-size:2.5rem">🍽️</span>
+            <span style="font-weight:600;color:var(--text)">${suggestion}</span>
+            <span style="font-size:0.85rem;color:var(--text-subtle)">${hint}</span>
+          </div>`;
         setSearching(false);
         return;
       }

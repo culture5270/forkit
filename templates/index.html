@@ -258,6 +258,28 @@
     #theme-toggle:hover { border-color: #e94560; color: #e94560; transform: none; box-shadow: none; }
     #theme-toggle::after { display: none; }
 
+    #account-nav {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      z-index: 100;
+    }
+
+    #account-nav a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    #account-nav a:hover { color: #e94560; }
+
+    #account-nav .sep { color: var(--border); }
+
     /* Tablet */
     @media (max-width: 768px) {
       body { gap: 2rem; padding: 1.5rem; }
@@ -305,6 +327,17 @@
 </head>
 <body>
   <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
+  <nav id="account-nav">
+    {% if is_logged_in %}
+    <span>{{ username }}</span>
+    <span class="sep">·</span>
+    <a href="/favorites">Favorites</a>
+    <span class="sep">·</span>
+    <a href="/logout">Logout</a>
+    {% else %}
+    <a href="/login">Login</a>
+    {% endif %}
+  </nav>
   <header>
     <h1>Fork <span>It!</span></h1>
     <p>Can't decide where to eat?<br>Let us pick a restaurant near you.</p>
@@ -363,16 +396,6 @@
   </div>
 
   <footer style="color: #444; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
-    <div style="display: flex; gap: 1.25rem;">
-      {% if is_logged_in %}
-      <span style="color: var(--text-muted);">Hi, {{ username }}</span>
-      <a href="/favorites" class="leave-comment">Favorites</a>
-      <a href="/logout" class="leave-comment">Logout</a>
-      {% else %}
-      <a href="/login" class="leave-comment">Login</a>
-      <a href="/register" class="leave-comment">Register</a>
-      {% endif %}
-    </div>
     <a href="/feedback" class="leave-comment">Leave a comment</a>
     <div style="display: flex; gap: 1.25rem;">
       <a href="/terms" class="leave-comment">Terms of Use</a>

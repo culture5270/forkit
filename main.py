@@ -103,10 +103,7 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
             return any(kw in names for kw in type_keywords)
         results = [r for r in all_results if matches_type(r)]
     else:
-        results = [
-            r for r in all_results
-            if any("/food/" in c.get("icon", {}).get("prefix", "") for c in r.get("categories", []))
-        ]
+        results = all_results
     if not results:
         return {"pick": None, "restaurants": []}
     names = [r["name"] for r in results]

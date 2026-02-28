@@ -78,6 +78,9 @@ async def privacy(request: Request):
 @app.get("/api/nearby")
 @limiter.limit("10/minute")
 async def nearby_restaurants(request: Request, lat: float, lng: float, radius: int = 1500, exclude: str = "", types: str = ""):
+    type_keywords = [t.strip().lower() for t in types.split(",") if t.strip()] if types else []
+    query = type_keywords[0] if len(type_keywords) == 1 else "restaurant"
+
     async with httpx.AsyncClient() as client:
         response = await client.get(
             "https://places-api.foursquare.com/places/search",
@@ -88,6 +91,7 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
             params={
                 "ll": f"{lat},{lng}",
                 "radius": radius,
+                "query": query,
                 "limit": 50,
                 "fields": "name,categories,location,website,distance",
             },
@@ -96,27 +100,7 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
     data = response.json()
     all_results = data.get("results", [])
 
-    FOOD_KEYWORDS = {
-        "restaurant", "food", "diner", "bistro", "kitchen", "grill", "café", "cafe",
-        "bakery", "pizzeria", "sushi", "taco", "noodle", "ramen", "pho", "curry",
-        "steakhouse", "eatery", "dining", "brasserie", "gastropub", "buffet",
-        "burger", "pizza", "seafood", "sandwich", "deli", "wings", "bbq", "barbecue",
-        "smokehouse", "rotisserie", "bowl", "fast food", "food truck", "dim sum",
-        "japanese", "chinese", "italian", "mexican", "indian", "thai", "korean",
-        "vietnamese", "mediterranean", "greek", "french", "american",
-    }
-
-    def is_food_place(r):
-        cat_text = " ".join(
-            f"{c.get('name', '')} {c.get('short_name', '')}"
-            for c in r.get("categories", [])
-        ).lower()
-        return any(kw in cat_text for kw in FOOD_KEYWORDS)
-
-    food_results = [r for r in all_results if is_food_place(r)]
-
-    if types:
-        type_keywords = [t.strip().lower() for t in types.split(",")]
+    if type_keywords:
         def matches_type(r):
             cat_text = " ".join(
                 f"{c.get('name', '')} {c.get('short_name', '')}"
@@ -124,9 +108,9 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
             ).lower()
             place_name = r.get("name", "").lower()
             return any(kw in cat_text or kw in place_name for kw in type_keywords)
-        results = [r for r in food_results if matches_type(r)]
+        results = [r for r in all_results if matches_type(r)]
     else:
-        results = food_results
+        results = all_results
 
     if not results:
         return {"pick": None, "restaurants": []}

@@ -343,6 +343,15 @@
       <label><input type="checkbox" value="vietnamese,pho"><span>Vietnamese</span></label>
       <label><input type="checkbox" value="wings"><span>Wings</span></label>
     </div>
+    <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; justify-content:center;">
+      <span class="filter-label" style="margin:0;">Price:</span>
+      <div class="cuisine-filter" id="price-filter" style="flex-wrap:nowrap;">
+        <label><input type="checkbox" value="1"><span>$</span></label>
+        <label><input type="checkbox" value="2"><span>$$</span></label>
+        <label><input type="checkbox" value="3"><span>$$$</span></label>
+        <label><input type="checkbox" value="4"><span>$$$$</span></label>
+      </div>
+    </div>
     <div style="display:flex; gap:1rem; flex-wrap:wrap; justify-content:center;">
       <button id="fork-btn" onclick="pickRestaurant()">Fork It!</button>
       <button id="pick-again-btn" onclick="pickAgain()" style="display:none; background:transparent; border:2px solid #e94560; box-shadow:none;">Pick Again</button>
@@ -400,6 +409,16 @@
       });
     });
 
+    // Restore saved price filters
+    const savedPrices = JSON.parse(localStorage.getItem('forkit_prices') || '[]');
+    document.querySelectorAll('#price-filter input[type="checkbox"]').forEach(cb => {
+      if (savedPrices.includes(cb.value)) cb.checked = true;
+      cb.addEventListener('change', () => {
+        const checked = [...document.querySelectorAll('#price-filter input[type="checkbox"]:checked')].map(c => c.value);
+        localStorage.setItem('forkit_prices', JSON.stringify(checked));
+      });
+    });
+
     let spinning = false;
     let pickHistory = [];
 
@@ -409,6 +428,7 @@
 
     function setCuisineDisabled(disabled) {
       getCuisineCheckboxes().forEach(cb => cb.disabled = disabled);
+      document.querySelectorAll('#price-filter input[type="checkbox"]').forEach(cb => cb.disabled = disabled);
     }
 
     function setSearching(on) {
@@ -516,10 +536,12 @@
 
       const selectedTypes = [...document.querySelectorAll('#cuisine-filter input:checked')]
         .map(cb => cb.value).join(',');
+      const selectedPrices = [...document.querySelectorAll('#price-filter input:checked')]
+        .map(cb => cb.value).join(',');
 
       let data;
       try {
-        const res = await fetch(`/api/nearby?lat=${lat}&lng=${lng}&radius=${radiusMeters}&exclude=${encodeURIComponent(pickHistory.join(','))}&types=${encodeURIComponent(selectedTypes)}`);
+        const res = await fetch(`/api/nearby?lat=${lat}&lng=${lng}&radius=${radiusMeters}&exclude=${encodeURIComponent(pickHistory.join(','))}&types=${encodeURIComponent(selectedTypes)}&prices=${encodeURIComponent(selectedPrices)}`);
         data = await res.json();
       } catch (e) {
         status.textContent = 'Something went wrong. Please try again.';

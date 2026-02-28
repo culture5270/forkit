@@ -591,6 +591,12 @@
 
       spin();
     }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && document.activeElement !== document.getElementById('location-input')) {
+        pickRestaurant();
+      }
+    });
   </script>
 </body>
 </html>

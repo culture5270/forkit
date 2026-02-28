@@ -88,7 +88,6 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
             params={
                 "ll": f"{lat},{lng}",
                 "radius": radius,
-                "categories": "13065",
                 "limit": 50,
                 "fields": "name,categories,location,website,distance",
             },
@@ -96,6 +95,26 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
     response.raise_for_status()
     data = response.json()
     all_results = data.get("results", [])
+
+    FOOD_KEYWORDS = {
+        "restaurant", "food", "diner", "bistro", "kitchen", "grill", "café", "cafe",
+        "bakery", "pizzeria", "sushi", "taco", "noodle", "ramen", "pho", "curry",
+        "steakhouse", "eatery", "dining", "brasserie", "gastropub", "buffet",
+        "burger", "pizza", "seafood", "sandwich", "deli", "wings", "bbq", "barbecue",
+        "smokehouse", "rotisserie", "bowl", "fast food", "food truck", "dim sum",
+        "japanese", "chinese", "italian", "mexican", "indian", "thai", "korean",
+        "vietnamese", "mediterranean", "greek", "french", "american",
+    }
+
+    def is_food_place(r):
+        cat_text = " ".join(
+            f"{c.get('name', '')} {c.get('short_name', '')}"
+            for c in r.get("categories", [])
+        ).lower()
+        return any(kw in cat_text for kw in FOOD_KEYWORDS)
+
+    food_results = [r for r in all_results if is_food_place(r)]
+
     if types:
         type_keywords = [t.strip().lower() for t in types.split(",")]
         def matches_type(r):
@@ -105,15 +124,12 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
             ).lower()
             place_name = r.get("name", "").lower()
             return any(kw in cat_text or kw in place_name for kw in type_keywords)
-        results = [r for r in all_results if matches_type(r)]
+        results = [r for r in food_results if matches_type(r)]
     else:
-        results = all_results
+        results = food_results
+
     if not results:
-        sample_cats = [
-            {"name": r["name"], "categories": [{"name": c.get("name"), "short_name": c.get("short_name")} for c in r.get("categories", [])]}
-            for r in all_results[:5]
-        ]
-        return {"pick": None, "restaurants": [], "_debug_sample": sample_cats}
+        return {"pick": None, "restaurants": []}
     names = [r["name"] for r in results]
     exclude_set = {e.strip() for e in exclude.split(",") if e.strip()}
     candidates = [r for r in results if r["name"] not in exclude_set] or results

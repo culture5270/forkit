@@ -99,8 +99,12 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
     if types:
         type_keywords = [t.strip().lower() for t in types.split(",")]
         def matches_type(r):
-            names = " ".join(c.get("short_name", "").lower() for c in r.get("categories", []))
-            return any(kw in names for kw in type_keywords)
+            cat_text = " ".join(
+                f"{c.get('name', '')} {c.get('short_name', '')}"
+                for c in r.get("categories", [])
+            ).lower()
+            place_name = r.get("name", "").lower()
+            return any(kw in cat_text or kw in place_name for kw in type_keywords)
         results = [r for r in all_results if matches_type(r)]
     else:
         results = all_results

@@ -77,7 +77,7 @@ async def privacy(request: Request):
 
 @app.get("/api/nearby")
 @limiter.limit("10/minute")
-async def nearby_restaurants(request: Request, lat: float, lng: float, radius: int = 1500, exclude: str = "", types: str = "", prices: str = ""):
+async def nearby_restaurants(request: Request, lat: float, lng: float, radius: int = 1500, exclude: str = "", types: str = ""):
     type_keywords = [t.strip().lower() for t in types.split(",") if t.strip()] if types else []
     query = type_keywords[0] if len(type_keywords) == 1 else "restaurant"
 
@@ -112,10 +112,6 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
     else:
         results = all_results
 
-    price_levels = {int(p) for p in prices.split(",") if p.strip().isdigit()}
-    if price_levels:
-        results = [r for r in results if r.get("price") in price_levels]
-
     if not results:
         return {"pick": None, "restaurants": []}
     names = [r["name"] for r in results]
@@ -126,9 +122,10 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
     address = pick.get("location", {}).get("formatted_address", "")
     website = pick.get("website", "")
     distance_miles = round(pick.get("distance", 0) / 1609.34, 1)
+    price = "$" * pick["price"] if pick.get("price") else ""
     return {
         "pick": pick["name"],
-        "description": {"categories": categories, "address": address, "website": website, "distance_miles": distance_miles},
+        "description": {"categories": categories, "price": price, "address": address, "website": website, "distance_miles": distance_miles},
         "restaurants": names,
     }
 

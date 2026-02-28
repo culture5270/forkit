@@ -100,17 +100,28 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
     data = response.json()
     all_results = data.get("results", [])
 
+    FOOD_KEYWORDS = {
+        "restaurant", "food", "diner", "bistro", "kitchen", "grill", "café", "cafe",
+        "bakery", "pizzeria", "sushi", "taco", "noodle", "ramen", "pho", "curry",
+        "steakhouse", "eatery", "dining", "brasserie", "gastropub", "buffet",
+        "burger", "pizza", "seafood", "sandwich", "deli", "wings", "bbq", "barbecue",
+        "smokehouse", "rotisserie", "bowl", "fast food", "food truck", "dim sum",
+        "japanese", "chinese", "italian", "mexican", "indian", "thai", "korean",
+        "vietnamese", "mediterranean", "greek", "french", "american",
+    }
+
+    def cat_text(r):
+        return " ".join(
+            f"{c.get('name', '')} {c.get('short_name', '')}"
+            for c in r.get("categories", [])
+        ).lower()
+
+    food_results = [r for r in all_results if any(kw in cat_text(r) for kw in FOOD_KEYWORDS)]
+
     if type_keywords:
-        def matches_type(r):
-            cat_text = " ".join(
-                f"{c.get('name', '')} {c.get('short_name', '')}"
-                for c in r.get("categories", [])
-            ).lower()
-            place_name = r.get("name", "").lower()
-            return any(kw in cat_text or kw in place_name for kw in type_keywords)
-        results = [r for r in all_results if matches_type(r)]
+        results = [r for r in food_results if any(kw in cat_text(r) or kw in r.get("name", "").lower() for kw in type_keywords)]
     else:
-        results = all_results
+        results = food_results
 
     if not results:
         return {"pick": None, "restaurants": []}

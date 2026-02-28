@@ -110,7 +110,8 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
     if not results:
         return {"pick": None, "restaurants": []}
     names = [r["name"] for r in results]
-    candidates = [r for r in results if r["name"] != exclude] or results
+    exclude_set = {e.strip() for e in exclude.split(",") if e.strip()}
+    candidates = [r for r in results if r["name"] not in exclude_set] or results
     pick = random.choice(candidates)
     categories = " · ".join(c["short_name"] for c in pick.get("categories", []))
     address = pick.get("location", {}).get("formatted_address", "")

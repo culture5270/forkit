@@ -401,7 +401,7 @@
     });
 
     let spinning = false;
-    let lastPick = '';
+    let pickHistory = [];
 
     function getCuisineCheckboxes() {
       return document.querySelectorAll('#cuisine-filter input[type="checkbox"]');
@@ -453,6 +453,7 @@
         slider.disabled = false;
         locationInput.disabled = false;
         getCuisineCheckboxes().forEach(cb => { cb.disabled = false; });
+        pickHistory = [];
         return;
       }
 
@@ -518,7 +519,7 @@
 
       let data;
       try {
-        const res = await fetch(`/api/nearby?lat=${lat}&lng=${lng}&radius=${radiusMeters}&exclude=${encodeURIComponent(lastPick)}&types=${encodeURIComponent(selectedTypes)}`);
+        const res = await fetch(`/api/nearby?lat=${lat}&lng=${lng}&radius=${radiusMeters}&exclude=${encodeURIComponent(pickHistory.join(','))}&types=${encodeURIComponent(selectedTypes)}`);
         data = await res.json();
       } catch (e) {
         status.textContent = 'Something went wrong. Please try again.';
@@ -554,7 +555,7 @@
           setTimeout(spin, delay);
         } else {
           result.textContent = final;
-          lastPick = final;
+          pickHistory.push(final);
           const desc = data.description;
           description.textContent = '';
           if (desc.categories) {

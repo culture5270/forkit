@@ -3,7 +3,7 @@ import random
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, Form, Depends
+from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import bcrypt
@@ -14,7 +14,7 @@ from sqlmodel import Session, select
 from starlette.middleware.sessions import SessionMiddleware
 
 from database import create_db_and_tables, engine, get_session
-from models import Comment, User
+from models import Comment, Favorite, User
 
 load_dotenv()
 
@@ -57,7 +57,14 @@ def on_startup():
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    user_id = request.session.get("user_id")
+    is_logged_in = user_id is not None
+    username = request.session.get("username", "")
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "is_logged_in": is_logged_in,
+        "username": username,
+    })
 
 
 @app.get("/feedback", response_class=HTMLResponse)
@@ -73,6 +80,132 @@ async def terms(request: Request):
 @app.get("/privacy", response_class=HTMLResponse)
 async def privacy(request: Request):
     return templates.TemplateResponse("privacy.html", {"request": request})
+
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_get(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request, "error": None})
+
+
+@app.post("/register", response_class=HTMLResponse)
+async def register_post(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    session: Session = Depends(get_session),
+):
+    if password != confirm_password:
+        return templates.TemplateResponse("register.html", {
+            "request": request, "error": "Passwords do not match"
+        })
+    existing = session.exec(select(User).where(User.username == username)).first()
+    if existing:
+        return templates.TemplateResponse("register.html", {
+            "request": request, "error": "Username already taken"
+        })
+    user = User(username=username[:100], password_hash=hash_password(password))
+    session.add(user)
+    session.commit()
+    return RedirectResponse("/login", status_code=302)
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def user_login_get(request: Request):
+    if request.session.get("user_id") is not None:
+        return RedirectResponse("/", status_code=302)
+    return templates.TemplateResponse("user_login.html", {"request": request, "error": None})
+
+
+@app.post("/login", response_class=HTMLResponse)
+async def user_login_post(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    session: Session = Depends(get_session),
+):
+    user = session.exec(select(User).where(User.username == username)).first()
+    if user and verify_password(password, user.password_hash):
+        request.session["user_id"] = user.id
+        request.session["username"] = user.username
+        return RedirectResponse("/", status_code=302)
+    return templates.TemplateResponse("user_login.html", {
+        "request": request, "error": "Invalid username or password"
+    })
+
+
+@app.get("/logout")
+async def user_logout(request: Request):
+    request.session.pop("user_id", None)
+    request.session.pop("username", None)
+    return RedirectResponse("/", status_code=302)
+
+
+@app.get("/favorites", response_class=HTMLResponse)
+async def favorites_page(request: Request, session: Session = Depends(get_session)):
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        return RedirectResponse("/login", status_code=302)
+    favorites = session.exec(
+        select(Favorite).where(Favorite.user_id == user_id).order_by(Favorite.saved_at.desc())
+    ).all()
+    return templates.TemplateResponse("favorites.html", {
+        "request": request,
+        "favorites": favorites,
+        "username": request.session.get("username", ""),
+    })
+
+
+@app.get("/api/favorites")
+async def get_favorites(request: Request, session: Session = Depends(get_session)):
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=401)
+    favorites = session.exec(
+        select(Favorite).where(Favorite.user_id == user_id).order_by(Favorite.saved_at.desc())
+    ).all()
+    return [{"id": f.id, "name": f.name, "address": f.address, "categories": f.categories, "website": f.website} for f in favorites]
+
+
+@app.post("/api/favorites")
+async def save_favorite(request: Request, session: Session = Depends(get_session)):
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=401)
+    body = await request.json()
+    name = (body.get("name") or "").strip()[:200]
+    if not name:
+        raise HTTPException(status_code=422, detail="Name is required")
+    existing = session.exec(
+        select(Favorite).where(Favorite.user_id == user_id, Favorite.name == name)
+    ).first()
+    if existing:
+        return {"ok": True, "already_saved": True}
+    fav = Favorite(
+        user_id=user_id,
+        name=name,
+        address=(body.get("address") or "")[:500],
+        categories=(body.get("categories") or "")[:200],
+        website=(body.get("website") or "")[:500],
+    )
+    session.add(fav)
+    session.commit()
+    return {"ok": True}
+
+
+@app.delete("/api/favorites/{name}")
+async def delete_favorite(name: str, request: Request, session: Session = Depends(get_session)):
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=401)
+    fav = session.exec(
+        select(Favorite).where(Favorite.user_id == user_id, Favorite.name == name)
+    ).first()
+    if not fav:
+        raise HTTPException(status_code=404)
+    session.delete(fav)
+    session.commit()
+    return {"ok": True}
 
 
 @app.get("/api/nearby")

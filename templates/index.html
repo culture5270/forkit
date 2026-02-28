@@ -358,10 +358,21 @@
       <button id="fork-btn" onclick="pickRestaurant()">Fork It!</button>
       <button id="pick-again-btn" onclick="pickAgain()" style="display:none; background:transparent; border:2px solid #e94560; box-shadow:none;">Pick Again</button>
       <button id="share-btn" onclick="sharePick()" style="display:none; background:transparent; border:2px solid var(--border); color:var(--text-muted); box-shadow:none; font-size:0.95rem; padding:0.7rem 1.5rem;">Share</button>
+      <button id="save-btn" onclick="saveFavorite()" style="display:none; background:transparent; border:2px solid var(--border); color:var(--text-muted); box-shadow:none; font-size:0.95rem; padding:0.7rem 1.5rem;">Save ♡</button>
     </div>
   </div>
 
   <footer style="color: #444; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+    <div style="display: flex; gap: 1.25rem;">
+      {% if is_logged_in %}
+      <span style="color: var(--text-muted);">Hi, {{ username }}</span>
+      <a href="/favorites" class="leave-comment">Favorites</a>
+      <a href="/logout" class="leave-comment">Logout</a>
+      {% else %}
+      <a href="/login" class="leave-comment">Login</a>
+      <a href="/register" class="leave-comment">Register</a>
+      {% endif %}
+    </div>
     <a href="/feedback" class="leave-comment">Leave a comment</a>
     <div style="display: flex; gap: 1.25rem;">
       <a href="/terms" class="leave-comment">Terms of Use</a>
@@ -415,9 +426,14 @@
     });
 
 
+    const IS_LOGGED_IN = {{ 'true' if is_logged_in else 'false' }};
+    const CURRENT_USERNAME = {{ ('"' + username + '"') if username else '""' }};
+
     let spinning = false;
     let pickHistory = [];
     let lastAddress = '';
+    let lastCategories = '';
+    let lastWebsite = '';
 
     function getCuisineCheckboxes() {
       return document.querySelectorAll('#cuisine-filter input[type="checkbox"]');
@@ -433,12 +449,43 @@
       const shareBtn = document.getElementById('share-btn');
       const slider = document.getElementById('radius');
       const locationInput = document.getElementById('location-input');
+      const saveBtn = document.getElementById('save-btn');
       btn.disabled = on;
       if (pickAgainBtn.style.display !== 'none') pickAgainBtn.disabled = on;
       if (shareBtn.style.display !== 'none') shareBtn.disabled = on;
+      if (saveBtn.style.display !== 'none' && saveBtn.textContent !== 'Saved ♥') saveBtn.disabled = on;
       slider.disabled = on;
       locationInput.disabled = on;
       setCuisineDisabled(on);
+    }
+
+    async function saveFavorite() {
+      const name = document.getElementById('result').textContent;
+      if (!name) return;
+      if (!IS_LOGGED_IN) {
+        window.location.href = '/login';
+        return;
+      }
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, address: lastAddress, categories: lastCategories, website: lastWebsite }),
+        });
+        if (res.ok) {
+          btn.textContent = 'Saved ♥';
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Save failed';
+          setTimeout(() => { btn.textContent = 'Save ♡'; }, 2000);
+        }
+      } catch {
+        btn.disabled = false;
+        btn.textContent = 'Save failed';
+        setTimeout(() => { btn.textContent = 'Save ♡'; }, 2000);
+      }
     }
 
     async function sharePick() {
@@ -486,6 +533,7 @@
         btn.textContent = 'Fork It!';
         pickAgainBtn.style.display = 'none';
         document.getElementById('share-btn').style.display = 'none';
+        document.getElementById('save-btn').style.display = 'none';
         slider.disabled = false;
         locationInput.disabled = false;
         getCuisineCheckboxes().forEach(cb => { cb.disabled = false; });
@@ -610,6 +658,8 @@
           pickHistory.push(final);
           const desc = data.description;
           description.textContent = '';
+          lastCategories = desc.categories || '';
+          lastWebsite = desc.website || '';
           if (desc.categories) {
             const cat = document.createElement('span');
             cat.textContent = desc.categories;
@@ -641,6 +691,10 @@
           btn.textContent = 'Clear';
           pickAgainBtn.style.display = 'inline-block';
           document.getElementById('share-btn').style.display = 'inline-block';
+          const saveBtn = document.getElementById('save-btn');
+          saveBtn.style.display = 'inline-block';
+          saveBtn.textContent = 'Save ♡';
+          saveBtn.disabled = false;
           setSearching(false);
         }
       }

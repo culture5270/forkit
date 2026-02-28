@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Favorites — Fork It!</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍴</text></svg>">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #1a1a2e;
+      --bg-card: #12122a;
+      --text: #eee;
+      --text-muted: #aaa;
+      --text-subtle: #666;
+      --border: #444;
+      --border-subtle: #333;
+    }
+
+    body.light {
+      --bg: #f5f5f7;
+      --bg-card: #ffffff;
+      --text: #1a1a2e;
+      --text-muted: #555;
+      --text-subtle: #999;
+      --border: #ccc;
+      --border-subtle: #e0e0e0;
+    }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    h1 { font-size: 1.8rem; }
+    h1 span { color: #e94560; }
+
+    .back-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: #e94560; }
+
+    .empty {
+      text-align: center;
+      padding: 4rem 0;
+      color: var(--text-subtle);
+    }
+    .empty .icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty p { font-size: 1rem; }
+
+    .favorites-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .fav-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .fav-info { flex: 1; min-width: 0; }
+
+    .fav-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f5a623;
+      margin-bottom: 0.3rem;
+    }
+
+    .fav-categories {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .fav-address {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .fav-website {
+      font-size: 0.85rem;
+      color: #e94560;
+      text-decoration: none;
+      word-break: break-all;
+    }
+    .fav-website:hover { text-decoration: underline; }
+
+    .remove-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-subtle);
+      border-radius: 8px;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+    .remove-btn:hover { border-color: #e94560; color: #e94560; }
+
+    .user-info {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <script>if(localStorage.getItem('forkit_theme')==='light')document.body.classList.add('light');</script>
+  <div class="container">
+    <header>
+      <h1>Fork <span>It!</span></h1>
+      <a href="/" class="back-link">← Back to picker</a>
+    </header>
+
+    <div class="user-info">Saved favorites for <strong>{{ username }}</strong></div>
+
+    {% if favorites %}
+    <div class="favorites-list" id="favorites-list">
+      {% for fav in favorites %}
+      <div class="fav-card" id="fav-{{ loop.index }}">
+        <div class="fav-info">
+          <div class="fav-name">{{ fav.name }}</div>
+          {% if fav.categories %}
+          <div class="fav-categories">{{ fav.categories }}</div>
+          {% endif %}
+          {% if fav.address %}
+          <div class="fav-address">{{ fav.address }}</div>
+          {% endif %}
+          {% if fav.website %}
+          <a href="{{ fav.website }}" class="fav-website" target="_blank" rel="noopener">{{ fav.website }}</a>
+          {% endif %}
+        </div>
+        <button class="remove-btn" onclick="removeFavorite(this, '{{ fav.name | replace("'", "\\'") }}')">Remove</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty">
+      <div class="icon">♡</div>
+      <p>No favorites saved yet.<br>Pick a restaurant and click "Save ♡" to save it here.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <script>
+    async function removeFavorite(btn, name) {
+      btn.disabled = true;
+      btn.textContent = 'Removing…';
+      try {
+        const res = await fetch('/api/favorites/' + encodeURIComponent(name), { method: 'DELETE' });
+        if (res.ok) {
+          const card = btn.closest('.fav-card');
+          card.remove();
+          const list = document.getElementById('favorites-list');
+          if (list && list.children.length === 0) {
+            list.outerHTML = '<div class="empty"><div class="icon">♡</div><p>No favorites saved yet.<br>Pick a restaurant and click "Save ♡" to save it here.</p></div>';
+          }
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Remove';
+        }
+      } catch {
+        btn.disabled = false;
+        btn.textContent = 'Remove';
+      }
+    }
+  </script>
+</body>
+</html>

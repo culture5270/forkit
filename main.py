@@ -105,7 +105,7 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
     else:
         results = all_results
     if not results:
-        return {"pick": None, "restaurants": [], "_debug": {"radius_m": radius, "api_total": len(all_results), "after_filter": 0}}
+        return {"pick": None, "restaurants": []}
     names = [r["name"] for r in results]
     exclude_set = {e.strip() for e in exclude.split(",") if e.strip()}
     candidates = [r for r in results if r["name"] not in exclude_set] or results
@@ -118,7 +118,6 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
         "pick": pick["name"],
         "description": {"categories": categories, "address": address, "website": website, "distance_miles": distance_miles},
         "restaurants": names,
-        "_debug": {"radius_m": radius, "api_total": len(all_results), "after_filter": len(results)},
     }
 
 

@@ -426,8 +426,8 @@
     });
 
 
-    const IS_LOGGED_IN = {{ 'true' if is_logged_in else 'false' }};
-    const CURRENT_USERNAME = {{ ('"' + username + '"') if username else '""' }};
+    const IS_LOGGED_IN = {{ is_logged_in | tojson }};
+    const CURRENT_USERNAME = {{ username | tojson }};
 
     let spinning = false;
     let pickHistory = [];

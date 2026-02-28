@@ -93,7 +93,7 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
                 "radius": radius,
                 "query": query,
                 "limit": 50,
-                "fields": "name,categories,location,website,distance,price",
+                "fields": "name,categories,location,website,distance",
             },
         )
     response.raise_for_status()
@@ -122,7 +122,10 @@ async def nearby_restaurants(request: Request, lat: float, lng: float, radius: i
     address = pick.get("location", {}).get("formatted_address", "")
     website = pick.get("website", "")
     distance_miles = round(pick.get("distance", 0) / 1609.34, 1)
-    price = "$" * pick["price"] if pick.get("price") else ""
+    try:
+        price = "$" * int(pick["price"]) if pick.get("price") else ""
+    except (TypeError, ValueError):
+        price = ""
     return {
         "pick": pick["name"],
         "description": {"categories": categories, "price": price, "address": address, "website": website, "distance_miles": distance_miles},

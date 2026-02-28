@@ -521,7 +521,7 @@
       try {
         const res = await fetch(`/api/nearby?lat=${lat}&lng=${lng}&radius=${radiusMeters}&exclude=${encodeURIComponent(pickHistory.join(','))}&types=${encodeURIComponent(selectedTypes)}`);
         data = await res.json();
-      if (data._debug_sample) console.log('Category debug:', JSON.stringify(data._debug_sample, null, 2));
+      console.log('Fork It! response:', JSON.stringify(data).slice(0, 2000));
       } catch (e) {
         status.textContent = 'Something went wrong. Please try again.';
         setSearching(false);

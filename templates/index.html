@@ -283,6 +283,13 @@
 
     #account-nav .sep { color: var(--border); }
 
+    @media (max-width: 480px) {
+      #nav-favorites::after { content: ''; }
+      #nav-favorites { font-size: 0; }
+      #nav-favorites::before { content: '♡'; font-size: 1rem; }
+      #nav-sep, #nav-logout { display: none; }
+    }
+
     /* Tablet */
     @media (max-width: 768px) {
       body { gap: 2rem; padding: 1.5rem; }
@@ -332,9 +339,9 @@
   <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
   <nav id="account-nav">
     {% if is_logged_in %}
-    <a href="/favorites">Favorites</a>
-    <span class="sep">·</span>
-    <a href="/logout">Logout</a>
+    <a href="/favorites" id="nav-favorites">Favorites</a>
+    <span class="sep" id="nav-sep">·</span>
+    <a href="/logout" id="nav-logout">Logout</a>
     {% else %}
     <a href="/login">Login</a>
     {% endif %}

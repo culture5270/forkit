@@ -127,6 +127,28 @@
     }
     .remove-btn:hover { border-color: #e94560; color: #e94560; }
 
+    .danger-zone {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .danger-zone p {
+      font-size: 0.85rem;
+      color: var(--text-subtle);
+      margin-bottom: 0.75rem;
+    }
+    .delete-account-btn {
+      background: none;
+      border: 1px solid #e94560;
+      color: #e94560;
+      border-radius: 8px;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .delete-account-btn:hover { background: #e94560; color: #fff; }
+
     .user-info {
       font-size: 0.85rem;
       color: var(--text-muted);
@@ -173,9 +195,22 @@
       <p>No favorites saved yet.<br>Pick a restaurant and click "Save ♡" to save it here.</p>
     </div>
     {% endif %}
+
+    <div class="danger-zone">
+      <p>Deleting your account will remove all your saved favorites and cannot be undone.</p>
+      <button class="delete-account-btn" onclick="deleteAccount()">Delete My Account</button>
+    </div>
   </div>
 
   <script>
+    async function deleteAccount() {
+      if (!confirm('Are you sure you want to delete your account? All saved favorites will be permanently removed.')) return;
+      const res = await fetch('/api/account', { method: 'DELETE' });
+      if (res.ok) {
+        window.location.href = '/';
+      }
+    }
+
     async function removeFavorite(btn, name) {
       btn.disabled = true;
       btn.textContent = 'Removing…';

@@ -208,6 +208,22 @@ async def delete_favorite(name: str, request: Request, session: Session = Depend
     return {"ok": True}
 
 
+@app.delete("/api/account")
+async def delete_account(request: Request, session: Session = Depends(get_session)):
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=401)
+    favorites = session.exec(select(Favorite).where(Favorite.user_id == user_id)).all()
+    for fav in favorites:
+        session.delete(fav)
+    user = session.get(User, user_id)
+    if user:
+        session.delete(user)
+    session.commit()
+    request.session.pop("user_id", None)
+    return {"ok": True}
+
+
 @app.get("/api/nearby")
 @limiter.limit("10/minute")
 async def nearby_restaurants(request: Request, lat: float, lng: float, radius: int = 1500, exclude: str = "", types: str = ""):

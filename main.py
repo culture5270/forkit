@@ -346,7 +346,19 @@ async def admin_dashboard(request: Request, session: Session = Depends(get_sessi
     if not request.session.get("user"):
         return RedirectResponse("/admin/login", status_code=302)
     comments = session.exec(select(Comment).order_by(Comment.created_at.desc())).all()
-    return templates.TemplateResponse("dashboard.html", {"request": request, "comments": comments})
+    users = session.exec(select(User).order_by(User.id)).all()
+    favorites = session.exec(select(Favorite)).all()
+    fav_counts = {}
+    for fav in favorites:
+        fav_counts[fav.user_id] = fav_counts.get(fav.user_id, 0) + 1
+    admin_username = request.session.get("user")
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "comments": comments,
+        "users": users,
+        "fav_counts": fav_counts,
+        "admin_username": admin_username,
+    })
 
 
 @app.delete("/admin/comments/{comment_id}")
@@ -359,5 +371,20 @@ async def delete_comment(comment_id: int, request: Request, session: Session = D
         from fastapi import HTTPException
         raise HTTPException(status_code=404)
     session.delete(comment)
+    session.commit()
+    return {"ok": True}
+
+
+@app.delete("/admin/users/{user_id}")
+async def admin_delete_user(user_id: int, request: Request, session: Session = Depends(get_session)):
+    if not request.session.get("user"):
+        raise HTTPException(status_code=401)
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404)
+    favorites = session.exec(select(Favorite).where(Favorite.user_id == user_id)).all()
+    for fav in favorites:
+        session.delete(fav)
+    session.delete(user)
     session.commit()
     return {"ok": True}

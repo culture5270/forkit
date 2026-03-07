@@ -117,6 +117,35 @@
     <a href="/admin/logout" class="logout">Log out</a>
   </header>
 
+  <h2 style="font-size:1rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:1rem;">Users</h2>
+  <p class="meta">{{ users | length }} registered user{% if users | length != 1 %}s{% endif %}</p>
+
+  {% if users %}
+  <table style="margin-bottom:3rem;">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Favorites</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      {% if u.username != admin_username %}
+      <tr id="user-row-{{ u.id }}">
+        <td class="name">{{ u.username }}</td>
+        <td class="date">{{ fav_counts.get(u.id, 0) }}</td>
+        <td><button class="delete-btn" onclick="deleteUser({{ u.id }}, this)">Delete</button></td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty" style="padding:2rem 0;">No registered users yet.</p>
+  {% endif %}
+
+  <h2 style="font-size:1rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:1rem;">Comments</h2>
   <p class="meta">{{ comments | length }} comment{% if comments | length != 1 %}s{% endif %} total</p>
 
   {% if comments %}
@@ -144,6 +173,18 @@
   <p class="empty">No comments yet.</p>
   {% endif %}
   <script>
+    async function deleteUser(id, btn) {
+      if (!confirm('Delete this user and all their favorites?')) return;
+      btn.disabled = true;
+      const res = await fetch(`/admin/users/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        document.getElementById(`user-row-${id}`).remove();
+      } else {
+        btn.disabled = false;
+        alert('Failed to delete. Please try again.');
+      }
+    }
+
     async function deleteComment(id, btn) {
       if (!confirm('Delete this comment?')) return;
       btn.disabled = true;

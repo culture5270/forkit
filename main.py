@@ -46,13 +46,12 @@ def on_startup():
         return
     with Session(engine) as session:
         existing = session.exec(select(User).where(User.username == admin_username)).first()
-        if not existing:
-            user = User(
-                username=admin_username,
-                password_hash=hash_password(admin_password),
-            )
-            session.add(user)
-            session.commit()
+        if existing:
+            existing.password_hash = hash_password(admin_password)
+            session.add(existing)
+        else:
+            session.add(User(username=admin_username, password_hash=hash_password(admin_password)))
+        session.commit()
 
 
 @app.get("/", response_class=HTMLResponse)

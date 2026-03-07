@@ -523,8 +523,8 @@
       const name = document.getElementById('result').textContent;
       if (!name) return;
       const text = lastAddress
-        ? `Fork It! picked ${name} for me 🍴\n${lastAddress}\n\nFind your next restaurant: ${window.location.href}`
-        : `Fork It! picked ${name} for me 🍴\n${window.location.href}`;
+        ? `Fork It! picked ${name} for me 🍴\n${lastAddress}\n\nFind your next restaurant: https://forkit.me`
+        : `Fork It! picked ${name} for me 🍴\nhttps://forkit.me`;
       const btn = document.getElementById('share-btn');
       try {
         await navigator.clipboard.writeText(text);
